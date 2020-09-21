@@ -1,7 +1,0 @@
-mean(Highway1$rate)
-median(Highway1$rate)
-sd(Highway1$rate)
-summary(Highway1$rate)
-table(Highway1$htype)
-boxplot(Highway1$rate)
-plot(Highway1$X,Highway1$rate)
