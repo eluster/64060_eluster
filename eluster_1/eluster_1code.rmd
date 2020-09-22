@@ -1,0 +1,29 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r}
+# Code reads Highway1 data set into chunk
+Highway1 <- read.csv("Highway1.csv")
+# finds the mean for rate of accidents for million vehicle miles
+mean(Highway1$rate)
+# finds the median for rate of accidents for million vehicle miles
+median(Highway1$rate)
+# finds the standard deviation for rate of accidents for million vehicle miles
+sd(Highway1$rate)
+# gives the summary for rate of accidents for million vehicle miles
+summary(Highway1$rate)
+#gives the frequency of the different types of highway accidents in the data set
+table(Highway1$htype)
+# gives a boxplot of the rate of highway accidents
+boxplot(Highway1$rate)
+# plots each data point along the x axis and the rate of accidents along the y axis
+plot(Highway1$X,Highway1$rate)
+```
+
+
+
+
+
