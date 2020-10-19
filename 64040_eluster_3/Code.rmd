@@ -1,0 +1,61 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+tinytex::install_tinytex()
+FlightDelays <- read.csv("FlightDelays.csv")
+library(caret)
+library(ISLR)
+library(naivebayes)
+
+
+```
+
+```{r}
+# Data preparation
+FlightDelays$DAY_WEEK <- factor(FlightDelays$DAY_WEEK)
+FlightDelays$DAY_OF_MONTH <- factor(FlightDelays$DAY_OF_MONTH)
+FlightDelays$CRS_DEP_TIME<-factor(round(FlightDelays$CRS_DEP_TIME/100))
+```
+
+```{r}
+DelayVariables <- c(1, 2, 4, 8, 10, 13)
+set.seed(15)
+delay.part = createDataPartition(FlightDelays$Flight.Status, p = 0.6, list = FALSE)
+delay.train = FlightDelays[delay.part, DelayVariables]
+delay.validate <- FlightDelays[-delay.part, DelayVariables]
+delay.model <- naive_bayes(Flight.Status~., data = delay.train)
+delay.model
+```
+
+```{r}
+#Counts table and Proportion
+table(delay.train$Flight.Status, delay.train$DEST)
+prop.table(table(delay.train$Flight.Status, delay.train$DEST), margin = 1)
+```
+
+
+```{r}
+library(gmodels)
+new.train <- predict(delay.model, newdata = delay.train, type = "class")
+CrossTable(x=delay.train$Flight.Status, y=new.train, prop.chisq = FALSE)
+```
+
+```{r}
+new.val <- predict(delay.model, newdata=delay.validate, type="prob")
+classpredict <- predict(delay.model, newdata = delay.validate)
+CrossTable(x= delay.validate$Flight.Status, y=classpredict, prop.chisq = FALSE)
+```
+
+```{r}
+require(pROC)
+roc(delay.validate$Flight.Status,new.val[,1])
+plot.roc(delay.validate$Flight.Status,new.val[,1])
+
+```
+
+
+
+
