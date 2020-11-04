@@ -1,0 +1,102 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+library(tidyverse)
+library(factoextra)
+library(ISLR)
+Universities <- read.csv("Universities.csv")
+summary(Universities)
+
+```
+
+```{r}
+# Part 1. Remove all rows with N/A's
+Univ_Cleaned <-Universities[complete.cases(Universities),] # Removes all cases with N/A
+Univ_Cleaned$Public..1...Private..2. <- ifelse(Univ_Cleaned$Public..1...Private..2. == 1, "Public", "Private") # Transforms public/private to string to make is easier to show visually
+
+# The following code prepares the data for analysis
+Univ_data <- Univ_Cleaned[,c(4:20)] # creates new dataset without categorical
+scaleduniv <- scale(Univ_data) # scales new dataset
+distance <- get_dist(scaleduniv)
+fviz_dist(distance) # looks at distance
+
+```
+
+```{r}
+# Part 2: K-means
+# The first part of code determines how many clusters to use
+fviz_nbclust(scaleduniv, kmeans, method = "wss") #wss method
+fviz_nbclust(scaleduniv, kmeans, method = "silhouette") #silhouette method
+# The WSS suggests that 3 or 4 clusters would be best. The silhouette method suggests 3 would be best. Thus, I will continue with 3 clusters.
+
+k3<-kmeans(scaleduniv, centers = 3, nstart = 25) #kmeans formula
+str(k3)
+fviz_cluster(k3, data = scaleduniv) # displays the clusters
+
+```
+
+```{r}
+# Part 3. Compare the summary stats for each cluster in k3
+summary(k3)
+k3$size
+# The sizes show that kmeans considers clusters 1 to be much larger than 2, and 2 to be much larger than 3
+k3$centers
+# Universities in cluster 1 have relatively low graduation rates, relatively low room and board fees, lower in state tuition than cluster 2 but higher than cluster 3, and accepts the least number of students relative to applications
+# Universities in cluster 2 have relatively higher graduation rates, relatively high room and board fees, higher in state tuition than both other clusters, and accepts a higher percentage of students than cluster 1
+# Universities in cluster 3 have relatively low graduation rates, relatively low room and board fees, lower tuition fees than both other clusters, and accepts a much higher percentage of students than the other clusters.
+
+
+```
+
+```{r}
+# Part 4 and 5:
+Univ_w_cl <- cbind(Univ_Cleaned, k3$cluster) # Returns the cluster to the original dataset
+Univ_w_cl$cluster <- Univ_w_cl$`k3$cluster`
+
+# Uses ggplot to show public and private
+ggplot() +
+  geom_point(data = Univ_w_cl, 
+            mapping = aes(x = Graduation.rate, 
+            y = cluster, 
+            colour = Public..1...Private..2.))
+# Cluster 1 is mostly private, and Cluster 3 is almost entirely public. Cluster 2 is mixed but is mostly private. Graduation rate is used to prevent data from landing on the same point.
+ggplot() +
+  geom_point(data = Univ_w_cl, 
+             mapping = aes(x = State, 
+                           y = Graduation.rate, 
+                           colour = cluster))
+# On close inspection of the data, the small set of cluster 3 seems to spread out by state. Those most states have at least 1 of cluster 1 and 2, certain states of the east coast like Pennsylvania, North Carolina, and New York have significantly higher numbers of these universities, especially cluster 1. One main outlier is Texas, which has a large number of cluster 1 universities.
+
+#Based on this data, I would suggest that cluster 1 is mostly private, exclusive universities. Cluster 3 is mostly public and could be made out of community colleges. Cluster 2 is mixed, but  appears to be made out of successful universities based on the cluster data.
+
+```
+
+```{r}
+# Part 6.
+# Tufts is likely cluster 2 based on data. Tufts is a private institution with a low acceptance rate and high graduation rates.
+# It's missing value is pt.undergrad
+# the value for this scaled is -0.3130216
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
