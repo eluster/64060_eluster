@@ -1,0 +1,235 @@
+---
+html_document: default
+author: "Ethan Luster"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+title: "Final Project"
+---
+  This project represents the analysis of a dataset for CRISA, a marketing research agency. The dataset
+  is about customers for soap in India, about demographic information, prices, and consumer behavior.
+```{r warning = FALSE, message = FALSE, include = FALSE}
+# Loads required libraries
+library(tidyverse)
+library(factoextra)
+library(ISLR)
+library(class)
+library(caret)
+library(gmodels)
+library(flexclust)
+```
+
+```{r include = FALSE}
+# Imports required dataset
+BaSoap <- read.csv("BaSoap.csv")
+BaSoap = mutate(BaSoap, highest_loyalty = apply(BaSoap[,23:30], 1, max)) 
+# Highest loyalty represents the highest purchase percentage a customer had with a specific brand
+```
+
+This code creates the first category and scales it.
+```{r}
+cat1_data <- BaSoap[,c(12:18, 20:22, 47)] # All data using behavior and loyalty
+scaled_cat1 <-scale(cat1_data) # Scales the data due to different scales
+```
+The first category is based on purchase behavior and brand loyalty. This starts with the number of brands purchased,
+and continues until transaction volume. Column 19 (avg. price) is excluded because category 2 is supposed to be built
+around price. Columns 20 to 22 are whether a customer used promo 6, a different promo, or no promo. Column 47 represents
+the highest purchase percentage a customer had of any brand.
+Together, these should allow segmentation of the customers into 2-5 groups.
+
+```{r}
+fviz_nbclust(scaled_cat1, kmeans, method = "wss")
+```
+
+```{r}
+fviz_nbclust(scaled_cat1, kmeans, method = "silhouette")
+```
+
+The silhouette method suggests 5 clusters would work best. Based on WSS, using 5 is acceptable. Because of this, I will use 5 clusters.
+```{r message = FALSE}
+k_cat1<-kmeans(scaled_cat1, centers = 5, nstart = 25)
+fviz_cluster(k_cat1, data = scaled_cat1)
+
+k_cat1$centers
+# The centers show several things about each cluster.
+# Cluster 1: This cluster has the lowest number of transactions and value, and the least
+# likely to use an "other" promo. It has above average loyalty. This cluster is likely 
+# made up of average customers, who are not likely to be the most or least receptive to 
+# a marketing campaign.
+# 
+# Cluster 2: This cluster uses promo 6 and other promos the most, and rarely buys without
+# a promo. It has low loyalty and the second highest number of brand runs. This cluster 
+# is likely made up of discount buyers who hunt for the lowest price and care most about
+# that feature.
+#
+# Cluster 3: This cluster buys the most unique brands, has the most brand runs, buys the 
+# lowest volume, and has #the lowest loyalty. Because they are not closely associated 
+# with any promo, its possible this group cares little about price and brand and just buys
+# the first soap they see. For a low-cost, low-identity product, it makes sense that a 
+# group of these customers would be present.
+#
+# Cluster 4: This cluster has the highest loyalty by far, buys the least brands, buys the
+# most per brand run, and is the least likely to use promo 6. This cluster is made out of
+# customers extremely loyal to their brand. They are receptive to non-promo 6 promos, are
+# anyone targeting this group should not use promo 6.
+#
+# Cluster 5: This cluster buys the most product, has the 2nd most number of transactions,
+# and buy slightly less brands than the overall average. These customers are likely bulk
+# buyers, who either use lots of soap per person or have more than average numbers to buy
+# for. They aren't receptive to promo 6, but because of their above average value as 
+# customers, gaining their loyalty would have a high return on investment.
+```
+
+
+The second category is based on price and selling proposition. It includes row 19, the average price, the different promo
+categories, and the different proposition categories.
+```{r}
+cat2_data <- BaSoap[,c(19, 32:46)]
+scaled_cat2 <- scale(cat2_data)
+fviz_nbclust(scaled_cat2, kmeans, method = "wss")
+
+```
+
+```{r}
+fviz_nbclust(scaled_cat2, kmeans, method = "silhouette")
+```
+Silhouette shows 10 clusters being best. This is far over the max of 5. Based on wss, 3 clusters
+would work, and that's the amount used.
+```{r}
+k_cat2<-kmeans(scaled_cat2, centers = 3, nstart = 25)
+fviz_cluster(k_cat2, data = scaled_cat2)
+k_cat2$centers
+# There are three clusters with this category:
+# 1: This cluster has the highest average price per purchase. It is highly receptive to 
+# price category 1. It is most likely to use promos 6, 7, 8, 10, 12, and 13. Because of
+# the  highest average price, its likely that price category 1 is the highest. THe promo's
+# is most receptive to may be high end soaps.
+# 
+# 2: This cluster has the lowest average price per purchase, and is the most likely to use
+# price category 3. It is very likely to use proposition category 14, and least likely to
+# use all others. Because it has the lowest average price, price category 3 is likely the
+# lowest, with proposition 14 being for discount soaps.
+#
+# 3: This cluster has the mid level price per purchase, with its center being below the 
+# overall average. It is the most likely cluster to use price categories 2, 4, and 5.
+# It is the most likely to use proposition categories 4, 5, 9, 11 and 15. Because it is
+# associated with so many different propositions and prices, its likely these customers
+# are not buying based on price or proposition.
+```
+
+The third category includes all data used in categories 1 and 2.
+```{r}
+cat3_data <- BaSoap[,c(12:22, 32:47)]
+scaled_cat3 <- scale(cat3_data)
+fviz_nbclust(scaled_cat3, kmeans, method = "wss")
+
+```
+
+```{r}
+fviz_nbclust(scaled_cat3, kmeans, method = "silhouette")
+```
+Silhoutte shows 8 clusters being best, which is too many for marketing. Thus, we will stick with 3 based on WSS.
+```{r}
+k_cat3<-kmeans(scaled_cat3, centers = 3, nstart = 25)
+fviz_cluster(k_cat3, data = scaled_cat3)
+k_cat3$size
+k_cat3$centers
+# There are three clusters with this category:
+# Cluster 1: This cluster has the highest loyalty by far of any cluster, and it the 
+# smallest cluster. The customers are highly receptive to proposition 14 and price 
+# category 3. It makes few brand runs and has above average volume per transaction. 
+# This group is highly loyal to their brand and not highly receptive to promo's. A 
+# campaign able to flip them would gain a loyal customer, but would struggle to gain
+# them in the first place.
+#
+# Cluster 2: This cluster is receptive to proposition 5 and price category 2. For other
+# factors, this group seems to be middle of the road.
+#
+# Cluster 3: It has the lowest loyalty of any cluster. It is receptive to most promos 
+# and price category 1. A marketing campaign could flip these customers easily, but the
+# company would find it hardest to hold them. These customers also spend the most per 
+# product (avg. price)
+```
+
+To compare the clusters to the demographic data, I merged each cluster with the dataset seperately, and then
+aggregated the data by cluster to compare differences. 
+
+```{r include = FALSE}
+
+Soap_w_cluster1 <- cbind(BaSoap, k_cat1$cluster) # add category type 1 to dataset
+Soap_w_cluster1$ClustType1 <- Soap_w_cluster1$`k_cat1$cluster` # semantic change
+
+```
+This is the cluster aggregation for category 1.
+```{r}
+aggregate(Soap_w_cluster1[,c(1:22,32:47)],by=list(Soap_w_cluster1$ClustType1), FUN=mean)
+```
+
+```{r include = FALSE}
+Soap_w_cluster2 <- cbind(BaSoap, k_cat2$cluster)
+Soap_w_cluster2$ClustType2 <- Soap_w_cluster2$`k_cat2$cluster`
+
+```
+This is the cluster aggregation for category 2.
+```{r}
+aggregate(Soap_w_cluster2[,c(1:22,32:47)],by=list(Soap_w_cluster2$ClustType2), FUN=mean)
+```
+
+```{r include = FALSE}
+Soap_w_cluster3 <- cbind(BaSoap, k_cat3$cluster)
+Soap_w_cluster3$ClustType3 <- Soap_w_cluster3$`k_cat3$cluster`
+
+
+```
+This is the cluster aggregation for category 3.
+```{r}
+aggregate(Soap_w_cluster3[,c(1:22,32:47)],by=list(Soap_w_cluster3$ClustType3), FUN=mean)
+```
+  While all three aggregations provide useful information, category 3 is the most useful for segmentation. While it
+does slightly dilute the importance of some variables, it still gives us segments that are distigushable for each
+other. For a marketing campaign, these are the most useful.
+```{r}
+# Segmentation information:
+# Cluster 1: These customers are young buyers who purchase the same brand each time. They
+# have the lowest affluence score, and purchase the least in dollar value. Because of 
+# their loyalty, they will likely be the hardest cluster to flip to a new product. However,
+# once a company gains them, they are unlikely to switch back or to another competitor. 
+# Like most, they will by without a promo. A promo other than promo 6 should be used to target
+# them.
+#
+# Cluster 2: These customers can best be described as the average consumer. They are the middle
+# age and middle affluence of the clusters. They do have the highest total volume of any cluster.
+# A marketing campaign should use proposition 5 and price category 2 to reach them. These two
+# factors are the biggest standout feature among this cluster, and meeting these two will increase
+# sales among this group.
+#
+# Cluster 3: These customers are older customers with high affluence. They have high education, and
+# are not loyal to any brand in particular. Though a large number are in proposition category 5, 
+# there is no proposition category with most of them. A marketing campaign to these customers must 
+# sell on quality and price. Though they buy the least volume, they shop frequently and come back 
+# for more. These customers are likely the easiest to reach but the hardest to hold onto.
+```
+
+Part 3: For the classification model, cluster 3 was choosen. In this scenario, the company is looking
+for customers who are easiest to flip. The advertisements sent out will focus on price and quality.
+```{r include = FALSE}
+knndata <- Soap_w_cluster3[,c(12:22, 32:47, 49)]
+knndata$correct <- ifelse(knndata$ClustType3 == 3,1,0)
+knnpartition <- createDataPartition(knndata$No..of.Brands, p = 0.8, list = FALSE)
+train.soap <- knndata[knnpartition, ]
+valid.soap <- knndata[-knnpartition, ]
+train.predictors<- train.soap[, 1:27]
+test.preidctors<-valid.soap[, 1:27]
+train.labels<-train.soap[,29]
+test.labels<-valid.soap[,29]
+
+predicted.labels<-knn(train.predictors, test.preidctors, cl = train.labels, k = 5)
+head(predicted.labels)
+
+```
+
+```{r}
+CrossTable(x = test.labels, y=predicted.labels, prop.chisq = FALSE)
+```
+The model does a decent, but not great job at predicting which customers are in cluster 1.
